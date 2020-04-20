@@ -34,7 +34,7 @@ public class SocketServerThread extends Thread {
 
     /**
      * DATE 2020/4/8 11:43
-     * DESC 替换之前程序为线程启动
+     * DESC 替换执行方式为线程
      */
     @Override
     public void run() {
@@ -53,6 +53,7 @@ public class SocketServerThread extends Thread {
                     ret.append(bytesToHexString(bytes));  //将字节转换成16进制拼接到ret字符串
                     if (end && Objects.equals(bytesToHexString(bytes), "23")) {  //第二个结束标识置true
                         ret = new StringBuilder(ret.substring(0, ret.length() - 4) + "2323");  //将结尾16进制表示的"##"替换为字符串"##"
+                        System.out.println("客户端地址：" + socket.getRemoteSocketAddress());
                         dataParsing.parsing(ret.toString());
                         ret = new StringBuilder();
                         start1 = false;

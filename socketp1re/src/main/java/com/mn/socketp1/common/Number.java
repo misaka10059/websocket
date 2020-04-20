@@ -23,6 +23,23 @@ public class Number {
     }
 
     /**
+     * DATE 2020/4/17 17:37
+     * DESC 两字节16进制字符串转无符号2进制转10进制数
+     */
+    public static int getIntValue(String hexStr) {
+        if (hexStr.length() != 4) {
+//            throw new ServiceException(502, ExceptionCode.HEX_STR_502);
+            System.out.println("字符串不是两字节");
+            return 0;
+        }
+        String hexStringL = Number.HexStringToBinString(hexStr.substring(0, 2)); //低字节
+        String hexStringH = Number.HexStringToBinString(hexStr.substring(2));  //高字节
+        String s = hexStringH + hexStringL;
+        return Integer.parseInt(s, 2);
+    }
+
+
+    /**
      * DATE 2020/4/9 16:56
      * DESC 求指定字符串的算术校验和
      * 每8位二进制数相加求和，最终结果保留低8位二进制数
