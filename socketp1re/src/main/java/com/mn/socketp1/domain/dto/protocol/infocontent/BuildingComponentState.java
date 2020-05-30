@@ -18,6 +18,8 @@ public class BuildingComponentState {
     private String componentTypeHex;  //部件类型  1字节
     private String componentTypeMeaning;
     private String componentAddressHex;  //部件地址  4字节
+    private String areaCode;  //区号
+    private String positionCode;  //位号
     private String componentStateHex;  //部件状态 2字节
     private String componentNoteHex;  //部件说明  31字节
     private String componentNoteMeaning;
@@ -30,6 +32,8 @@ public class BuildingComponentState {
                                   String componentTypeHex,
                                   String componentTypeMeaning,
                                   String componentAddressHex,
+                                  String areaCode,
+                                  String positionCode,
                                   String componentStateHex,
                                   String componentNoteHex,
                                   String componentNoteMeaning,
@@ -41,6 +45,8 @@ public class BuildingComponentState {
         this.componentTypeHex = componentTypeHex;
         this.componentTypeMeaning = componentTypeMeaning;
         this.componentAddressHex = componentAddressHex;
+        this.areaCode = areaCode;
+        this.positionCode = positionCode;
         this.componentStateHex = componentStateHex;
         this.componentNoteHex = componentNoteHex;
         this.componentNoteMeaning = componentNoteMeaning;

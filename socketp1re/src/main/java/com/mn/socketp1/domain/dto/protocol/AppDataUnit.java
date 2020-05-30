@@ -282,7 +282,9 @@ public class AppDataUnit {
                     String systemType02 = dataUnitHex.substring(4 + i * length * 2, 6 + i * length * 2);
                     String systemAddress02 = dataUnitHex.substring(6 + i * length * 2, 8 + i * length * 2);
                     String componentType02 = dataUnitHex.substring(8 + i * length * 2, 10 + i * length * 2);
-                    String componentAddress02 = dataUnitHex.substring(10 + i * length * 2, 18 + i * length * 2);
+                    String componentAddress02 = dataUnitHex.substring(10 + i * length * 2, 18 + i * length * 2);  //部件地址：由区号和位号组成
+                    String positionCode02 = componentAddress02.substring(0, 2 * 2);  //位号
+                    String areaCode02 = componentAddress02.substring(2 * 2, 4 * 2);  //区号
                     String componentState02 = dataUnitHex.substring(18 + i * length * 2, 22 + i * length * 2);
                     String componentNote02 = dataUnitHex.substring(22 + i * length * 2, 84 + i * length * 2);
                     String timeLabel02 = dataUnitHex.substring(84 + i * length * 2, 96 + i * length * 2);
@@ -300,6 +302,8 @@ public class AppDataUnit {
                                     componentType02,
                                     componentTypeMeaning02,
                                     componentAddress02,
+                                    areaCode02,
+                                    positionCode02,
                                     componentState02,
                                     componentNote02,
                                     componentNoteMeaning02,

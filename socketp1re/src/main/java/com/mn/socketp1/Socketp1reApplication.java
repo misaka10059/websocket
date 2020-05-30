@@ -1,6 +1,5 @@
 package com.mn.socketp1;
 
-import com.mn.socketp1.config.IpList;
 import com.mn.socketp1.service.SocketServerThread;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,10 +19,11 @@ public class Socketp1reApplication {
             System.out.println("监听端口9301");
             while (true) {
                 socket = serverSocket.accept();
-                if(!IpList.containsIp(socket.getRemoteSocketAddress().toString())){
+                /* 是否过滤客户端的ip */
+                /*if(!IpList.containsIp(socket.getRemoteSocketAddress().toString())){
                     socket.close();
                    continue;
-                }
+                }*/
                 SocketServerThread thread = new SocketServerThread(socket);
                 thread.start();
             }
