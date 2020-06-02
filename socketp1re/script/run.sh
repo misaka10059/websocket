@@ -1,0 +1,1 @@
+nohup java -Xmx512M -jar /ccs/demo/socket/socketp1re.jar >> /tmp/socketp1re.log &

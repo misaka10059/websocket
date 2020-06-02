@@ -1,5 +1,6 @@
 package com.mn.socketp1.service;
 
+import com.mn.socketp1.common.Number;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedInputStream;
@@ -8,6 +9,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -53,15 +55,26 @@ public class SocketServerThread extends Thread {
             while (dis.read(bytes) != -1) {  //-1表示没有数据
                 if (start1 && start2) {  //确认接收到"@@"启动标识
                     ret.append(bytesToHexString(bytes));  //将字节转换成16进制拼接到ret字符串
-                    if (end && Objects.equals(bytesToHexString(bytes), "23")) {  //第二个结束标识置true
+                    if (Objects.equals(bytesToHexString(bytes), "23")) {
+                        System.out.println("-----结束字符：" + Arrays.toString(bytes));
+                    }
+                    if (end && Objects.equals(bytesToHexString(bytes), "23") && ret.length() > 8) {  //第二个结束标识置true
                         ret = new StringBuilder(ret.substring(0, ret.length() - 4) + "2323");  //将结尾16进制表示的"##"替换为字符串"##"
                         System.out.println("客户端地址：" + socket.getRemoteSocketAddress());
                         dataParsing.parsing(ret.toString());
-
                         /*
                          * 确认
                          */
-                        byte[] confirmation = {64, 64, 1, 0, 1, 1, 35, 58, 9, 26, 9, 12, 56, 91, 1, 0, 0, 0, (byte) 121, 3, 0, 0, 0, 0, 0, 0, 3, (byte) 171, 35, 35};
+                        String message = ret.toString();
+                        String cUnit = message.substring(4, 24) + message.substring(36, 48) + message.substring(24, 36) + "000003";
+                        String checksum = Number.getCheckSum(cUnit);
+                        String returnMessage = "4040" + message.substring(4, 24) + message.substring(36, 48) + message.substring(24, 36) + "000003" + checksum + "2323";
+//                        byte[] confirmation = {64, 64, 1, 0, 1, 1, 35, 58, 9, 26, 9, 12, 56, 91, 1, 0, 0, 0, (byte) 121, 3, 0, 0, 0, 0, 0, 0, 3, (byte) 171, 35, 35};
+                        byte[] confirmation = hexToByteArray(returnMessage);
+                        System.out.println("确认数据：" + Arrays.toString(confirmation));
+                        /*byte[] confirmation = new byte[30];
+                        confirmation[0] = 40;
+                        confirmation[1] = 40;*/
                         /*
                          * 否认
                          */
@@ -76,13 +89,16 @@ public class SocketServerThread extends Thread {
                         end = false;
                         continue;
                     }
-                    if (!end && Objects.equals(bytesToHexString(bytes), "23")) {  //第一个结束标识置true
+                    if (!end && Objects.equals(bytesToHexString(bytes), "23") && ret.length() > 8) {  //第一个结束标识置true,业务流水号中可能会包含2323,因此增加长度判断
                         end = true;
                     }
                 }
-                if (start1 && !start2 && Objects.equals(bytesToHexString(bytes), "40")) {  //第二个启动标识置true，输出字符串添加上"@@"
+                if (start1 && Objects.equals(bytesToHexString(bytes), "40") && ret.length() < 4) {  //第二个启动标识置true，输出字符串添加上"@@"
                     start2 = true;
                     ret.append("4040");
+                } else {
+                    if (!start2)
+                        start1 = false;
                 }
                 if (!start1 && Objects.equals(bytesToHexString(bytes), "40")) {  //第一个启动标识置true
                     start1 = true;
@@ -124,4 +140,35 @@ public class SocketServerThread extends Thread {
         }
         return stringBuilder.toString();
     }
+
+
+    public static byte hexToByte(String inHex) {
+        return (byte) Integer.parseInt(inHex, 16);
+    }
+
+    public static byte[] hexToByteArray(String inHex) {
+        int hexlen = inHex.length();
+        byte[] result;
+        if (hexlen % 2 == 1) {
+            //奇数
+            hexlen++;
+            result = new byte[(hexlen / 2)];
+            inHex = "0" + inHex;
+        } else {
+            //偶数
+            result = new byte[(hexlen / 2)];
+        }
+        int j = 0;
+        for (int i = 0; i < hexlen; i += 2) {
+            result[j] = hexToByte(inHex.substring(i, i + 2));
+            j++;
+        }
+        return result;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(bytesToHexString(hexToByteArray("9ff9")));
+    }
+
+
 }

@@ -62,7 +62,9 @@ public class Number {
     }
 
     public static void main(String[] args) {
-        /*String checkString = "010001ff001e0a0104140100000000000200000000000800021c01001e0a010414";
-        System.out.println(getCheckSum(checkString));*/
+        byte  b= 0x0f;
+        System.out.println(b);
+        byte year = Byte.valueOf("0c");
+        System.out.println(year);
     }
 }

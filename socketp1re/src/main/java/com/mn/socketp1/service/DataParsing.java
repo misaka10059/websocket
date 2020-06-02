@@ -46,9 +46,6 @@ public class DataParsing {
          */
 //      String startIdentifier = message.substring(Offset.startIdentifierStart, Offset.startIdentifierEnd);
         String controlUnitHex = message.substring(Offset.controlUnitStart, Offset.controlUnitEnd);  //控制单元16进制数据
-        int endIdentifierStart = message.indexOf("2323");  //寻找结束符"##"起始位置，16进制为"2323"
-        int checkSumStart = endIdentifierStart - 2;  //计算校验和的起始位置，校验和占一个字节，16进制为2个字符
-        String checkSumHex = message.substring(checkSumStart, endIdentifierStart);  //校验和16进制数据
         String businessSerialNumberHex = message.substring(Offset.businessSerialNumberStart, Offset.businessSerialNumberEnd);  //业务流水号16进制数据
         String protocolVersionNumberHex = message.substring(Offset.protocolVersionNumberStart, Offset.protocolVersionNumberEnd);  //协议版本号16进制数据
         String timeLabelHex = message.substring(Offset.timeLabelStart, Offset.timeLabelEnd);  //时间标签16进制数据
@@ -57,8 +54,31 @@ public class DataParsing {
         String appDataUnitLengthHex = message.substring(Offset.appDataUnitLengthStart, Offset.appDataUnitLengthEnd);  //应用数据单元长度16进制数据
         String commandByteHex = message.substring(Offset.commandByteStart, Offset.commandByteEnd);  //命令字节16进制数据
 
+        int appDataUnitLength = Number.getIntValue(appDataUnitLengthHex);
+//        System.out.println("old message:" + message);
+        String judgeMessage = message.substring(Offset.controlUnitEnd);
+//        System.out.println("judgeMessage:" + judgeMessage);
+//        System.out.println("judgeMessageLength:" + judgeMessage.length());
+//        System.out.println("appDataUnitLength:" + appDataUnitLength);
+        /*
+         * 解决在校验和为"23"时,数据缺失的问题
+         * 接收程序中是根据某一字节的16进制字符串是否是"23"来判断是否是结束标志的,因此若校验和的值是"23",那么有效字符串将会缺少一个"23",在此进行判断
+         * 如果从"应用数据单元"开始的数据的长度+2等于通过"应用数据单元长度标识"计算出来的值+"校验和"和"结束标识"的值,并且应用数据单元紧接着的两个字符是"23",那么就可以判断是上面所说的情况
+         */
+        if (judgeMessage.length() + 2 == appDataUnitLength * 2 + 6) {
+            if (judgeMessage.substring(appDataUnitLength * 2, appDataUnitLength * 2 + 2).equals("23")) {
+                message += "23";
+            }
+        }
+//        System.out.println("new message:" + message);
+        int endIdentifierStart = message.lastIndexOf("2323");  //寻找结束符"##"起始位置，16进制为"2323"
+        int checkSumStart = endIdentifierStart - 2;  //计算校验和的起始位置，校验和占一个字节，16进制为2个字符
+        String checkSumHex = message.substring(checkSumStart, endIdentifierStart);  //校验和16进制数据
+
         String checkSum = Number.getCheckSum(message.substring(4, message.length() - 6));
         if (!checkSum.equals(checkSumHex)) {
+            System.out.println("原始checkSum:" + checkSumHex);
+            System.out.println("计算校验和:" + checkSum);
             System.out.println("校验和不一致");
         }
 
@@ -78,7 +98,7 @@ public class DataParsing {
             TypeIdentifier typeIdentifier = TypeIdentifier.getTypeIdentifier(typeIdentifierHex);  //获取类型标识
             if (typeIdentifier != null) {
 //                throw new ServiceException(501, ExceptionCode.TYPE_IDENTIFIER_501);
-                dataUnit.dataUnitSeparation(appDataUnitHex, typeIdentifier);  //解析应用数据单元内容
+                dataUnit.dataUnitSeparation(sourceAddressHex, appDataUnitHex, typeIdentifier);  //解析应用数据单元内容
             } else {
                 System.out.println("解析typeIdentifier没有与库中符合选项，为null");
             }

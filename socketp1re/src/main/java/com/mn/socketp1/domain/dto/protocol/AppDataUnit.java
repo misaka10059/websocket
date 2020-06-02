@@ -1,10 +1,18 @@
 package com.mn.socketp1.domain.dto.protocol;
 
+import ccsfr.core.util.SecurityUtils;
 import com.mn.socketp1.common.Number;
+import com.mn.socketp1.component.http.HttpClient;
+import com.mn.socketp1.component.http.HttpManager;
+import com.mn.socketp1.component.http.RunTimeData;
+import com.mn.socketp1.domain.dto.data.ComponentStateDto;
+import com.mn.socketp1.domain.dto.data.DataSourceDto;
+import com.mn.socketp1.domain.dto.data.UserTranStateDto;
 import com.mn.socketp1.domain.dto.protocol.infocontent.*;
 import com.mn.socketp1.domain.dto.protocol.infocontent.kn.*;
 import org.springframework.stereotype.Component;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,10 +24,21 @@ import java.util.List;
 @Component
 public class AppDataUnit {
 
+    /*public AppDataUnit() {
+
+    }*/
+
     public static void main(String[] args) {
 
 
     }
+
+    //    private GsonBuilder gson = new GsonBuilder();
+
+//    @Autowired
+//    private Gson gson = new Gson();
+
+    private HttpManager httpManager = new HttpManager();
 
     /**
      * DATE 2020/3/27 15:43
@@ -103,12 +122,12 @@ public class AppDataUnit {
      * DATE 2020/3/27 10:43
      * DESC 解析部件状态
      */
-    private void getComponentStateMeaning(String hexStr) {
-        if (hexStr.length() != 4) {
+    private ComponentStateDto getComponentStateMeaning(String hexStr) {
+        /*if (hexStr.length() != 4) {
 //            throw new ServiceException(502, ExceptionCode.HEX_STR_502);
             System.out.println("字符串不是两字节");
             return;
-        }
+        }*/
         List<String> list = new ArrayList<>();
         String hexStr1 = hexStr.substring(0, 2);  //低位字节
         System.out.println("hexStr1:" + hexStr1);
@@ -125,6 +144,13 @@ public class AppDataUnit {
             list.add(ComponentState.getMeaning("H", i, binStr2.substring(binStr2.length() - 1 - i, binStr2.length() - i)));
         }
         appPrint(list);
+        int isFireAlarm = 0;
+        int isMalfunction = 0;
+        if (list.get(1).equals("火警"))
+            isFireAlarm = 1;
+        if (list.get(2).equals("故障"))
+            isMalfunction = 1;
+        return new ComponentStateDto(isFireAlarm, isMalfunction);
     }
 
     /**
@@ -144,7 +170,9 @@ public class AppDataUnit {
         month = judgeTimeRange(month, 1, 12, "月");
         int year = Integer.parseInt(timeLabelHex.substring(10, 12), 16);
         year = judgeTimeRange(year, 0, 99, "年");
-        return year + "年" + month + "月" + day + "日" + hour + "时" + min + "分" + sec + "秒";
+
+        return "20" + year + "-" + month + "-" + day + " " + hour + ":" + min + ":" + sec;
+//        return year + "年" + month + "月" + day + "日" + hour + "时" + min + "分" + sec + "秒";
     }
 
     /**
@@ -156,10 +184,10 @@ public class AppDataUnit {
      * 超出范围返回-1
      * 否则返回原值
      */
-    private int judgeTimeRange(int timeValue, int min, int max, String name) {
+    private static int judgeTimeRange(int timeValue, int min, int max, String name) {
         if (timeValue < min || timeValue > max) {
             System.out.println(name + "，时间范围错误");
-            return -1;
+            return min;
         }
         return timeValue;
     }
@@ -242,7 +270,7 @@ public class AppDataUnit {
      * DATE 2020/3/25 10:59
      * DESC 解析应用数据单元内容
      */
-    public void dataUnitSeparation(String dataUnitHex, TypeIdentifier typeIdentifier) {
+    public void dataUnitSeparation(String sourceAddressHex, String dataUnitHex, TypeIdentifier typeIdentifier) {
         System.out.println("应用数据单元类型标识为:" + typeIdentifier.getContent() + " 16进制:" + typeIdentifier.getHex());
         String infoObjectsNumber = dataUnitHex.substring(2, 4);
         int length = typeIdentifier.getDataLength();  //此类型标识的信息体的单个信息体的字节数
@@ -292,7 +320,7 @@ public class AppDataUnit {
                     String systemTypeMeaning02 = SystemType.getMeaning(systemType02);
                     String componentTypeMeaning02 = ComponentType.getMeaning(componentType02);
                     String componentNoteMeaning02 = getChineseString(componentNote02);
-                    getComponentStateMeaning(componentState02);
+                    ComponentStateDto componentStateDto = getComponentStateMeaning(componentState02);
                     String timeLabelMeaning02 = getTimeMeaning(timeLabel02);
                     buildingComponentStateList02.add(
                             new BuildingComponentState(
@@ -309,8 +337,40 @@ public class AppDataUnit {
                                     componentNoteMeaning02,
                                     timeLabel02,
                                     timeLabelMeaning02));
+
+
+                    /*DataSourceDto dataSourceDto = new DataSourceDto();
+                    dataSourceDto.setDataSourceId("数据接入服务器ID");
+                    dataSourceDto.setDeviceCode(sourceAddressHex + componentAddress02);
+                    dataSourceDto.setDeviceType("这个设备的类型");
+                    dataSourceDto.setTimestamp(Timestamp.valueOf(timeLabelMeaning02).getTime());
+                    JsonObject jsonObject = new JsonObject();
+                    jsonObject.addProperty("isFireAlarm", componentStateDto.getIsFireAlarm());
+                    jsonObject.addProperty("isMalFunction", componentStateDto.getIsMalfunction());
+//                    dataSourceDto.setDeviceData(gson.toJson(componentStateDto));
+                    dataSourceDto.setDeviceData(jsonObject.toString());
+//                    String hash = SecurityUtils.encrypt(gson.toJson(dataSourceDto) + "数据接入服务器KEY", "SHA-256");
+                    String hash = SecurityUtils.encrypt(jsonObject.toString() + "数据接入服务器KEY", "SHA-256");
+//                    System.out.println("发送的json:" + gson.toJson(dataSourceDto));
+                    System.out.println("发送的json:" + jsonObject.toString());
+                    System.out.println("发送的hash:" + hash);
+                    String responseText = httpManager.dataTran(
+                            RunTimeData.DATA_SOURCE_DTO_KEY, jsonObject.toString(),
+                            RunTimeData.HASH_KEY, hash,
+                            RunTimeData.DATA_TRAN_URL);
+                    int ret = HttpClient.MAXRET;  //重发次数，默认为3次
+                    while (responseText.equals(HttpClient.NO_RESPONSE) && ret > 0) {
+                        System.out.println("服务器无响应，执行重发任务");
+                        responseText = httpManager.dataTran(
+                                RunTimeData.DATA_SOURCE_DTO_KEY, jsonObject.toString(),
+                                RunTimeData.HASH_KEY, hash,
+                                RunTimeData.DATA_TRAN_URL);
+                        ret -= 1;
+                    }*/
                 }
                 appPrint(buildingComponentStateList02);  //打印内容
+
+
                 break;
             case "03":
                 List<BuildingComponentAnalog> buildingComponentAnalogList03 = new ArrayList<>();  //协议规定number不大于63
@@ -525,6 +585,34 @@ public class AppDataUnit {
                 String systemTimeMeaning1c = getTimeMeaning(systemTime1c);
                 UserSystemTime userSystemTime1c = new UserSystemTime(systemTime1c, systemTimeMeaning1c);
                 appPrint(userSystemTime1c);
+
+                /*UserTranStateDto userTranStateDto = new UserTranStateDto(systemTimeMeaning1c);
+                DataSourceDto dataSourceDto = new DataSourceDto();
+                dataSourceDto.setDataSourceId("数据接入服务器ID");
+                dataSourceDto.setDeviceCode(sourceAddressHex);
+                dataSourceDto.setDeviceType("这个设备的类型");
+                dataSourceDto.setTimestamp(Timestamp.valueOf(systemTimeMeaning1c).getTime());
+//                JsonObject jsonObject = new JsonObject();
+//                jsonObject.addProperty("time", userTranStateDto.getTime());
+                String s = "{" + "\"" + "time" + "\"" + ":" + "\"" + userTranStateDto.getTime() + "\"" + "}";
+                dataSourceDto.setDeviceData(s);
+                String hash = SecurityUtils.encrypt(s + "数据接入服务器KEY", "SHA-256");
+                System.out.println("发送的json:" + s);
+                System.out.println("发送的hash:" + hash);
+                String responseText = httpManager.dataTran(
+                        RunTimeData.DATA_SOURCE_DTO_KEY, s,
+                        RunTimeData.HASH_KEY, hash,
+                        RunTimeData.DATA_TRAN_URL);
+                int ret = HttpClient.MAXRET;  //重发次数，默认为3次
+                while (responseText.equals(HttpClient.NO_RESPONSE) && ret > 0) {
+                    System.out.println("服务器无响应，执行重发任务");
+                    responseText = httpManager.dataTran(
+                            RunTimeData.DATA_SOURCE_DTO_KEY, s,
+                            RunTimeData.HASH_KEY, hash,
+                            RunTimeData.DATA_TRAN_URL);
+                    ret -= 1;
+                }*/
+
                 break;
             /*----------------------------------------------------------------------------------------*/
             /*
