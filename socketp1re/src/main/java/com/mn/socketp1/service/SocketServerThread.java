@@ -1,8 +1,10 @@
 package com.mn.socketp1.service;
 
 import com.mn.socketp1.common.Number;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -18,20 +20,14 @@ import java.util.Objects;
  * DESC socket监听
  */
 @Service
-public class SocketServerThread extends Thread {
+public class SocketServerThread implements Runnable {
 
-    private DataParsing dataParsing = new DataParsing();
+    @Resource
+    private DataParsing dataParsing;
 
-    private Socket socket = null;
+    private Socket socket;
 
-    public SocketServerThread() {
-    }
-
-    /**
-     * DATE 2020/4/8 11:38
-     * DESC
-     */
-    public SocketServerThread(Socket socket) {
+    public void setSocket(Socket socket) {
         this.socket = socket;
     }
 
@@ -39,6 +35,7 @@ public class SocketServerThread extends Thread {
      * DATE 2020/4/8 11:43
      * DESC 替换执行方式为线程
      */
+    @SneakyThrows
     @Override
     public void run() {
         boolean start1 = false;  //当前字节是否表示为启动字符"@"，false为不是
@@ -108,11 +105,9 @@ public class SocketServerThread extends Thread {
             System.out.println(e.getMessage());
         } finally {
             try {
-                if (socket != null) {
-                    System.out.println(socket.getRemoteSocketAddress() + "关闭连接");
-                    System.out.println("关闭时间：" + LocalDateTime.now());
-                    socket.close();
-                }
+                System.out.println(socket.getRemoteSocketAddress() + "关闭连接");
+                System.out.println("关闭时间：" + LocalDateTime.now());
+                socket.close();
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             } catch (NullPointerException e) {
@@ -141,12 +136,11 @@ public class SocketServerThread extends Thread {
         return stringBuilder.toString();
     }
 
-
-    public static byte hexToByte(String inHex) {
+    private static byte hexToByte(String inHex) {
         return (byte) Integer.parseInt(inHex, 16);
     }
 
-    public static byte[] hexToByteArray(String inHex) {
+    private static byte[] hexToByteArray(String inHex) {
         int hexlen = inHex.length();
         byte[] result;
         if (hexlen % 2 == 1) {
@@ -165,10 +159,4 @@ public class SocketServerThread extends Thread {
         }
         return result;
     }
-
-    public static void main(String[] args) {
-        System.out.println(bytesToHexString(hexToByteArray("9ff9")));
-    }
-
-
 }

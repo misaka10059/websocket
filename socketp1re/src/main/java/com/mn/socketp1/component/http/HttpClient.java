@@ -1,5 +1,6 @@
 package com.mn.socketp1.component.http;
 
+import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -9,9 +10,9 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.lang.reflect.Type;
 
 /**
@@ -29,7 +30,7 @@ public class HttpClient {
 
     public static final int MAXRET = 3;  //最大重发次数
 
-    /*@Autowired
+    @Resource
     private Gson gson;
 
     public <T> T executeRequest(HttpRequestBase httpRequest, Type typeOfT) {
@@ -48,7 +49,7 @@ public class HttpClient {
             log.error("HTTP请求失败,ResponseEntity=" + responseText);
         }
         return result;
-    }*/
+    }
 
     String executeRequest(HttpRequestBase httpRequest) {
 //        String responseText = "未获取到";

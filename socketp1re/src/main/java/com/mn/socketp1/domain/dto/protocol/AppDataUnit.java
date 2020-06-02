@@ -1,6 +1,6 @@
 package com.mn.socketp1.domain.dto.protocol;
 
-import ccsfr.core.util.SecurityUtils;
+import com.google.gson.Gson;
 import com.mn.socketp1.common.Number;
 import com.mn.socketp1.component.http.HttpClient;
 import com.mn.socketp1.component.http.HttpManager;
@@ -10,35 +10,30 @@ import com.mn.socketp1.domain.dto.data.DataSourceDto;
 import com.mn.socketp1.domain.dto.data.UserTranStateDto;
 import com.mn.socketp1.domain.dto.protocol.infocontent.*;
 import com.mn.socketp1.domain.dto.protocol.infocontent.kn.*;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * AUTHOR MisakaNetwork
  * DATE 2020/3/26 9:40
  * DESC
  */
-@Component
+@Service
 public class AppDataUnit {
 
-    /*public AppDataUnit() {
+    @Resource
+    private Gson gson;
 
-    }*/
-
-    public static void main(String[] args) {
-
-
-    }
-
-    //    private GsonBuilder gson = new GsonBuilder();
-
-//    @Autowired
-//    private Gson gson = new Gson();
-
-    private HttpManager httpManager = new HttpManager();
+    @Resource
+    private HttpManager httpManager /*= new HttpManager()*/;
 
     /**
      * DATE 2020/3/27 15:43
@@ -64,6 +59,44 @@ public class AppDataUnit {
                 break;
         }
         return value;
+    }
+
+    public String bytes2Hex(byte[] bytes) {
+        String dst = "";
+        String tmp = null;
+
+        for (int i = 0; i < bytes.length; ++i) {
+            tmp = Integer.toHexString(bytes[i] & 255);
+            if (tmp.length() == 1) {
+                dst = dst + "0";
+            }
+
+            dst = dst + tmp;
+        }
+
+        return dst;
+    }
+
+    public String encrypt(String strSrc, String encName) {
+        MessageDigest messageDigest = null;
+        String strDst = null;
+
+        try {
+            byte[] byteSrc = strSrc.getBytes("UTF-8");
+            if (encName != null && !encName.equals("")) {
+                messageDigest = MessageDigest.getInstance(encName);
+                messageDigest.update(byteSrc);
+                strDst = bytes2Hex(messageDigest.digest());
+                return strDst;
+            } else {
+                return null;
+            }
+        } catch (NoSuchAlgorithmException var5) {
+            System.out.println("Invalid Algorithm");
+            return null;
+        } catch (UnsupportedEncodingException var6) {
+            return null;
+        }
     }
 
     /**
@@ -337,36 +370,28 @@ public class AppDataUnit {
                                     componentNoteMeaning02,
                                     timeLabel02,
                                     timeLabelMeaning02));
-
-
-                    /*DataSourceDto dataSourceDto = new DataSourceDto();
+                    DataSourceDto dataSourceDto = new DataSourceDto();
                     dataSourceDto.setDataSourceId("数据接入服务器ID");
                     dataSourceDto.setDeviceCode(sourceAddressHex + componentAddress02);
                     dataSourceDto.setDeviceType("这个设备的类型");
                     dataSourceDto.setTimestamp(Timestamp.valueOf(timeLabelMeaning02).getTime());
-                    JsonObject jsonObject = new JsonObject();
-                    jsonObject.addProperty("isFireAlarm", componentStateDto.getIsFireAlarm());
-                    jsonObject.addProperty("isMalFunction", componentStateDto.getIsMalfunction());
-//                    dataSourceDto.setDeviceData(gson.toJson(componentStateDto));
-                    dataSourceDto.setDeviceData(jsonObject.toString());
-//                    String hash = SecurityUtils.encrypt(gson.toJson(dataSourceDto) + "数据接入服务器KEY", "SHA-256");
-                    String hash = SecurityUtils.encrypt(jsonObject.toString() + "数据接入服务器KEY", "SHA-256");
-//                    System.out.println("发送的json:" + gson.toJson(dataSourceDto));
-                    System.out.println("发送的json:" + jsonObject.toString());
+                    dataSourceDto.setDeviceData(gson.toJson(componentStateDto));
+                    String hash = encrypt(gson.toJson(dataSourceDto) + "数据接入服务器KEY", "SHA-256");
+                    System.out.println("发送的json:" + gson.toJson(dataSourceDto));
                     System.out.println("发送的hash:" + hash);
                     String responseText = httpManager.dataTran(
-                            RunTimeData.DATA_SOURCE_DTO_KEY, jsonObject.toString(),
+                            RunTimeData.DATA_SOURCE_DTO_KEY, gson.toJson(dataSourceDto),
                             RunTimeData.HASH_KEY, hash,
                             RunTimeData.DATA_TRAN_URL);
                     int ret = HttpClient.MAXRET;  //重发次数，默认为3次
                     while (responseText.equals(HttpClient.NO_RESPONSE) && ret > 0) {
                         System.out.println("服务器无响应，执行重发任务");
                         responseText = httpManager.dataTran(
-                                RunTimeData.DATA_SOURCE_DTO_KEY, jsonObject.toString(),
+                                RunTimeData.DATA_SOURCE_DTO_KEY, gson.toJson(dataSourceDto),
                                 RunTimeData.HASH_KEY, hash,
                                 RunTimeData.DATA_TRAN_URL);
                         ret -= 1;
-                    }*/
+                    }
                 }
                 appPrint(buildingComponentStateList02);  //打印内容
 
@@ -581,37 +606,37 @@ public class AppDataUnit {
             case "1c":
                 /*分割16进制字符串*/
                 String systemTime1c = dataUnitHex.substring(4, 16);
+//                String systemTime1c = dataUnitHex.substring(58, 70);
                 /*获取中文含义*/
                 String systemTimeMeaning1c = getTimeMeaning(systemTime1c);
+                System.out.println("时间：" + systemTimeMeaning1c);
                 UserSystemTime userSystemTime1c = new UserSystemTime(systemTime1c, systemTimeMeaning1c);
                 appPrint(userSystemTime1c);
 
-                /*UserTranStateDto userTranStateDto = new UserTranStateDto(systemTimeMeaning1c);
+                UserTranStateDto userTranStateDto = new UserTranStateDto(systemTimeMeaning1c);
                 DataSourceDto dataSourceDto = new DataSourceDto();
                 dataSourceDto.setDataSourceId("数据接入服务器ID");
                 dataSourceDto.setDeviceCode(sourceAddressHex);
                 dataSourceDto.setDeviceType("这个设备的类型");
                 dataSourceDto.setTimestamp(Timestamp.valueOf(systemTimeMeaning1c).getTime());
-//                JsonObject jsonObject = new JsonObject();
-//                jsonObject.addProperty("time", userTranStateDto.getTime());
-                String s = "{" + "\"" + "time" + "\"" + ":" + "\"" + userTranStateDto.getTime() + "\"" + "}";
-                dataSourceDto.setDeviceData(s);
-                String hash = SecurityUtils.encrypt(s + "数据接入服务器KEY", "SHA-256");
-                System.out.println("发送的json:" + s);
+                dataSourceDto.setDeviceData(gson.toJson(userTranStateDto));
+                String hash = encrypt(gson.toJson(dataSourceDto) + "数据接入服务器KEY", "SHA-256");
+//                String hash = SecurityUtils.encrypt(gson.toJson(dataSourceDto) + "数据接入服务器KEY", "SHA-256");
+                System.out.println("发送的json:" + gson.toJson(dataSourceDto));
                 System.out.println("发送的hash:" + hash);
                 String responseText = httpManager.dataTran(
-                        RunTimeData.DATA_SOURCE_DTO_KEY, s,
+                        RunTimeData.DATA_SOURCE_DTO_KEY, gson.toJson(dataSourceDto),
                         RunTimeData.HASH_KEY, hash,
                         RunTimeData.DATA_TRAN_URL);
                 int ret = HttpClient.MAXRET;  //重发次数，默认为3次
                 while (responseText.equals(HttpClient.NO_RESPONSE) && ret > 0) {
                     System.out.println("服务器无响应，执行重发任务");
                     responseText = httpManager.dataTran(
-                            RunTimeData.DATA_SOURCE_DTO_KEY, s,
+                            RunTimeData.DATA_SOURCE_DTO_KEY, gson.toJson(dataSourceDto),
                             RunTimeData.HASH_KEY, hash,
                             RunTimeData.DATA_TRAN_URL);
                     ret -= 1;
-                }*/
+                }
 
                 break;
             /*----------------------------------------------------------------------------------------*/

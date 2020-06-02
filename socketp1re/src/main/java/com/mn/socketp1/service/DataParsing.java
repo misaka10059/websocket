@@ -8,6 +8,7 @@ import com.mn.socketp1.domain.dto.protocol.infocontent.kn.ControlUnitCommandByte
 import com.mn.socketp1.domain.dto.protocol.infocontent.kn.TypeIdentifier;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import java.time.LocalDateTime;
 
 /**
@@ -18,7 +19,9 @@ import java.time.LocalDateTime;
 @Service
 public class DataParsing {
 
-    private AppDataUnit dataUnit = new AppDataUnit();
+    @Resource
+    private AppDataUnit dataUnit;
+//    private AppDataUnit dataUnit = new AppDataUnit();
 
     /**
      * DATE 2020/3/25 15:25
